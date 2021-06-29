@@ -7,18 +7,18 @@ import yfinance as yf
 import plotly.graph_objs as go
 
 
-def download(ticker, dates, interval):
+def download_ticker(ticker, dates, interval):
     return yf.download(tickers=ticker, period=dates, interval=interval)
 
 
 def show_graph(data):
-    fig = go.Figure()  # Decalre on figure
+    fig = go.Figure()  # Declare on figure
     fig.add_trace(go.Candlestick(x=data.index,
                                  open=data['Open'],
                                  high=data['High'],
                                  low=data['Low'],
                                  close=data['Close'], name='market data'))
-    fig.update_layout(title='A title', yaxis_title='Stock Price $', yaxis_range=[525, 535])
+    fig.update_layout(title='A title', yaxis_title='Stock Price $')
     fig.update_xaxes(
         rangeslider_visible=True,
         rangeselector=dict(
@@ -31,5 +31,5 @@ def show_graph(data):
             ])))
     fig.show()
 
-data = download('NFLX', '1d', '2m')
+data = download_ticker('aapl', '1d', '2m')
 show_graph(data)
