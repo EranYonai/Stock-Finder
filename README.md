@@ -1,2 +1,11 @@
 # Stock-Finder
- The start of an amazing project, a stock suggestion algorithm for day trading
+ The start of a new project, a stock suggestion algorithm for day trading
+
+### List of ticker picking parameters:
+- Pre market gap (first 'elephant' candle of the day)
+- Moving Averages - 20/100/200
+- Last day of trading percentage % change (momentum)
+- Sector trend
+- Index trend
+    - Index all time high relativity
+    - Calculate difference from ATH
