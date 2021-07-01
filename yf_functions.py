@@ -12,7 +12,7 @@ import configparser
 import urllib.request
 
 
-def check_connection(host='http://google.com'):
+def check_connection(host='https://google.com'):
     """
     Checks connection status
     :param host: google.com by defualt
@@ -199,8 +199,8 @@ def dumb_risk_analysis_tostring(risk_dict: dict) -> str:
                 + Style.RED + f"\nStop loss @{risk_dict['STOP_LOSS']}" + Style.END
                 + Style.BOLD + f"\nPossible stops:" + Style.END
                 + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*1']}$ for a {risk_dict['RISK']}$ gain (x2 the risk) " + Style.END
-                + Style.GREEN2 + f"\n    Sell in @{risk_dict['PROFIT*2']}$ for a {risk_dict['RISK'] * 2}$ gain (x3 the risk)" + Style.END
-                + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*3']}$ for a {risk_dict['RISK'] * 3}$ gain (x4 the risk)" + Style.END)
+                + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*2']}$ for a {risk_dict['RISK'] * 2}$ gain (x3 the risk)" + Style.END
+                + Style.GREEN2 + f"\n    Sell in @{risk_dict['PROFIT*3']}$ for a {risk_dict['RISK'] * 3}$ gain (x4 the risk)" + Style.END)
     else:
         return Style.RED + f"Ticker is not valid, but buy: {risk_dict['RISK/RISK_CANDLE']} shares!" + Style.END
 
@@ -231,16 +231,46 @@ def get_gap(ticker) -> float:
     return decimal2_float(history['Open'][1] - history['Close'][0])
 
 
-# Downloading and showing a ticker on a graph
-# data = download_ticker('mrna', '2d', '2m')
-# show_graph(data)
-# print(type(data))
-if check_connection():
-    print("~~~~Connection is good!~~~~")
-else:
-    print("~~~~Connection is bad!~~~~")
+def get_SMA(ticker: yf.Ticker, SMA: int) -> float:
+    """
+    Calculate SMA
+    :param ticker: a ticker
+    :type ticker: yf.Ticker
+    :param SMA: SMA
+    :type SMA: int
+    :return: SMA
+    :rtype: float
+    """
+    history = ticker.history(period='' + str(SMA) + 'd')
+    return decimal2_float(history['Close'].mean())
 
-print("----------------------")
-print(dumb_risk_analysis_tostring(dumb_risk_analysis()))
-print("----------------------")
-# print(load_tickers_from_ini())
+
+def get_last_day_percentage(ticker: yf.Ticker) -> float:
+    """
+    Get the last day of trading's percentage change
+    :param ticker: a ticker
+    :type ticker: yf.Ticker
+    :return: percentage as float
+    :rtype: float
+    """
+    # There are two cases: -% and +%
+    history = ticker.history(period='2d')
+    if history['Close'][1] >= history['Close'][0]:
+        return decimal2_float(((history['Close'][1]/history['Close'][0]) - 1) * 100)
+    else:
+        return decimal2_float((1 - history['Close'][1]/history['Close'][0]) * 100)
+
+# if __name__ == "__main__":
+#     # Downloading and showing a ticker on a graph
+#     # data = download_ticker('mrna', '2d', '2m')
+#     # show_graph(data)
+#     # print(type(data))
+#     if check_connection():
+#         print("~~~~Connection is good!~~~~")
+#     else:
+#         print("~~~~Connection is bad!~~~~")
+#
+#     print("----------------------")
+#     print(dumb_risk_analysis_tostring(dumb_risk_analysis()))
+#     print("----------------------")
+    # print(load_tickers_from_ini())
