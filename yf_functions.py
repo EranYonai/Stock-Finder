@@ -12,7 +12,7 @@ import configparser
 import urllib.request
 
 
-def check_connection(host='https://google.com'):
+def check_connection(host='https://finance.yahoo.com/'):
     """
     Checks connection status
     :param host: google.com by defualt
@@ -167,6 +167,7 @@ def dumb_risk_analysis_tostring(risk_dict: dict) -> str:
     :return: A string of information based on the dict received
     :rtype:str
     """
+
     class Style:
         BLACK = '\033[30m'
         RED = '\033[31m'
@@ -189,6 +190,7 @@ def dumb_risk_analysis_tostring(risk_dict: dict) -> str:
 
     os.system("")
     if risk_dict['CURRENT_PRICE'] is not None:
+        print(risk_dict)  # for now, maybe i'll get ideas...
         return (
                 f"You'll need to buy "
                 + Style.YELLOW + f"{risk_dict['RISK/RISK_CANDLE']}" + Style.END +
@@ -254,23 +256,40 @@ def get_last_day_percentage(ticker: yf.Ticker) -> float:
     :rtype: float
     """
     # There are two cases: -% and +%
-    history = ticker.history(period='2d')
+    # need to check if we're during the day or no (up period to 3d and calculate [1] & [2]
+    # validate!!!
+    from datetime import datetime
+    SYSTEM_TIME = datetime.now().strftime("%H:%M").split(':')
+    SYSTEM_TIME = [int(i) for i in SYSTEM_TIME]
+    period = '3d' if SYSTEM_TIME[0] > 16 and SYSTEM_TIME[1] >= 30 else '2d'
+    # ^^ basically, if current time is >16:30 take period of 3d thus getting yesterday's daily change and not today's
+    history = ticker.history(period=period)
     if history['Close'][1] >= history['Close'][0]:
-        return decimal2_float(((history['Close'][1]/history['Close'][0]) - 1) * 100)
+        return decimal2_float(((history['Close'][1] / history['Close'][0]) - 1) * 100)
     else:
-        return decimal2_float((1 - history['Close'][1]/history['Close'][0]) * 100)
+        return -decimal2_float((1 - history['Close'][1] / history['Close'][0]) * 100)
 
-# if __name__ == "__main__":
-#     # Downloading and showing a ticker on a graph
-#     # data = download_ticker('mrna', '2d', '2m')
-#     # show_graph(data)
-#     # print(type(data))
-#     if check_connection():
-#         print("~~~~Connection is good!~~~~")
-#     else:
-#         print("~~~~Connection is bad!~~~~")
-#
-#     print("----------------------")
-#     print(dumb_risk_analysis_tostring(dumb_risk_analysis()))
-#     print("----------------------")
+
+if __name__ == "__main__":
+    if check_connection():
+        print("~~~~Connection is good!~~~~")
+    else:
+        print("~~~~Connection is bad!~~~~\nCrash incoming:")
+    ticker = input("Insert Ticker: ")
+    # Downloading and showing a ticker on a graph
+    risk = input("Insert wanted risk: ")
+    data = download_ticker(ticker, '1d', '2m')
+    print("----------------------")
+    ticker = yf.Ticker(ticker)
+    risk_answer = risk_analysis(ticker, int(risk))
+    print(dumb_risk_analysis_tostring(risk_answer))
+    sma = [20, 50, 100, 200]
+    for i in sma:
+        print(f'SMA {str(i)}: {get_SMA(ticker, i)}')
+    print(f'Last day of trading change: {get_last_day_percentage(ticker)}%')
+    print("----------------------")
+    user_graph = input("Press Y to show graph")
+    if user_graph == 'Y' or user_graph == 'y':
+        show_graph(data)
+    # print(ticker.history(period='5d'))
     # print(load_tickers_from_ini())
