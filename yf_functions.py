@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 # Data Source
+import pandas.core.frame
 import yfinance as yf
 # Data visualization
 import plotly.graph_objs as go
@@ -218,33 +219,46 @@ def load_tickers_from_ini():
     return config['Tickers']['ticker_list'].split(',')
 
 
-def get_gap(ticker) -> float:
+def get_gap(ticker: str or yf.Ticker or pandas.core.frame.DataFrame) -> float:
     """
     Function that can get either str or yfinance object and calculate gap.
     GAP is calculated todays_open - yesterday_close
     :param ticker: Ticker name or Ticker object
-    :type ticker: str or yf
+    :type ticker: str or yf.Ticker or pandas.core.frame.DataFrame
     :return: 2 decimal float of GAP candle
     :rtype: float
     """
     if type(ticker) is str:
         ticker = yf.Ticker(ticker)
-    history = ticker.history(period='2d')
-    return decimal2_float(history['Open'][1] - history['Close'][0])
+    if type(ticker) is yf.Ticker:
+        history = ticker.history(period='2d')
+        return decimal2_float(history['Open'][1] - history['Close'][0])
+    if type(ticker) is pandas.core.frame.DataFrame:
+        df = ticker.reset_index()
+        start_value = len(df)-2
+        end_value = len(df)-1
+        df = df.loc[start_value:end_value]
+        return decimal2_float(df['Open'][end_value]-df['Close'][start_value])
 
 
-def get_SMA(ticker: yf.Ticker, SMA: int) -> float:
+def get_SMA(ticker: yf.Ticker or pandas.core.frame.DataFrame, SMA: int) -> float:
     """
     Calculate SMA
     :param ticker: a ticker
-    :type ticker: yf.Ticker
+    :type ticker: yf.Ticker or pandas.core.frame.DataFrame
     :param SMA: SMA
     :type SMA: int
     :return: SMA
     :rtype: float
     """
-    history = ticker.history(period='' + str(SMA) + 'd')
-    return decimal2_float(history['Close'].mean())
+    if type(ticker) is yf.Ticker:
+        history = ticker.history(period='' + str(SMA) + 'd')
+        return decimal2_float(history['Close'].mean())
+    if type(ticker) is pandas.core.frame.DataFrame:
+        df = ticker.reset_index()
+        df = df.loc[len(df)-SMA:len(df)]
+        return decimal2_float(df['Close'].mean())
+
 
 
 def get_last_day_percentage(ticker: yf.Ticker) -> float:
@@ -278,18 +292,20 @@ if __name__ == "__main__":
     ticker = input("Insert Ticker: ")
     # Downloading and showing a ticker on a graph
     risk = input("Insert wanted risk: ")
-    data = download_ticker(ticker, '1d', '2m')
+    ticker_data_5m = download_ticker(ticker, '1d', '5m')
+    ticker_data_1d = download_ticker(ticker, '365d', '1d')
     print("----------------------")
     ticker = yf.Ticker(ticker)
     risk_answer = risk_analysis(ticker, int(risk))
     print(dumb_risk_analysis_tostring(risk_answer))
     sma = [20, 50, 100, 200]
     for i in sma:
-        print(f'SMA {str(i)}: {get_SMA(ticker, i)}')
+        print(f'SMA {str(i)}: {get_SMA(ticker_data_1d, i)}')
     print(f'Last day of trading change: {get_last_day_percentage(ticker)}%')
     print("----------------------")
-    user_graph = input("Press Y to show graph")
-    if user_graph == 'Y' or user_graph == 'y':
-        show_graph(data)
+    # user_graph = input("Press Y to show graph")
+    # if user_graph == 'Y' or user_graph == 'y':
+    #     show_graph(ticker_data)
+
     # print(ticker.history(period='5d'))
     # print(load_tickers_from_ini())
