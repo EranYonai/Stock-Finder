@@ -2,12 +2,13 @@ import sys
 import platform
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
 import config
+import yfinance as yf
+import yf_functions as yf_func
 
 ## ==> GLOBALS
 counter = 0
 
 
-# YOUR APPLICATION
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -17,17 +18,37 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)  # Remove titlebar ^^ Works!
         self.center()
         self.oldPos = self.pos()
-        # Add Exit QAction to the
-
+        self.consolidation_bar.hide()
         # Triggers and connections:
         self.actionDay_Trading_Momentum.triggered.connect(self.momentum_page_open)
         self.actionTTM_Squeeze.triggered.connect(self.ttm_page_open)
         self.actionConsolidation_Patterns.triggered.connect(self.consolidation_page_open)
         self.actionExit.triggered.connect(self.close)
+        self.analyze_button_2.clicked.connect(self.consolidation_scan)
 
 
     def consolidation_page_open(self):
         self.stackedWidget.setCurrentIndex(2)
+
+
+    def consolidation_scan(self):
+        tickers = yf_func.load_tickers_from_ini()
+        percentage = float(self.percentage_text.text())
+        lookback = int(self.lookback_text.text())
+
+        self.consolidation_bar.show()
+        self.consolidation_bar.setValue(0)
+        total_for_bar = 100/len(tickers)
+        counter = 1
+
+        for ticker in tickers:
+            df = yf.download(ticker)  # Need to download all to csv and use that
+            if yf_func.is_consolidating(df, percentage=percentage, look_back_data=lookback):
+                self.results_edit_2.append(f'{ticker} is consolidating')
+            if yf_func.is_breaking_consolidation(df, percentage=percentage, look_back_data=lookback):
+                self.results_edit_2.append(f'{ticker} is breaking out of consolidation!')
+            self.consolidation_bar.setValue(int(total_for_bar * counter))
+            counter += 1
 
     def ttm_page_open(self):
         self.stackedWidget.setCurrentIndex(0)
@@ -67,7 +88,7 @@ class SplashScreen(QtWidgets.QMainWindow):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.progress)
         # TIMER IN MILLISECONDS
-        self.timer.start(25)
+        self.timer.start(10)
 
         # CHANGE DESCRIPTION
         self.timer.singleShot(1500, lambda: self.label_description.setText("<strong>LOADING</strong> FUNCTIONS"))
