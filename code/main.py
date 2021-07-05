@@ -15,9 +15,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Triggers and connections:
         self.analyze_button.clicked.connect(self.say_hello)
+        self.actionDay_Trading_Momentum.triggered.connect(self.momentum_page)
+        self.actionTTM_Squeeze.triggered.connect(self.ttm_page)
 
     def say_hello(self):
         print("Hello")
+
+    def ttm_page(self):
+        try:
+            self.stackedWidget.setCurrentIndex(0)
+        except Exception as e:
+            print(e)
+
+    def momentum_page(self):
+        self.stackedWidget.setCurrentIndex(1)
 
 
 # SPLASH SCREEN
@@ -33,7 +44,6 @@ class SplashScreen(QtWidgets.QMainWindow):
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
-
         ## QTIMER ==> START
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.progress)
@@ -43,10 +53,9 @@ class SplashScreen(QtWidgets.QMainWindow):
         # CHANGE DESCRIPTION
         self.timer.singleShot(1500, lambda: self.label_description.setText("<strong>LOADING</strong> FUNCTIONS"))
         self.timer.singleShot(3000,
-                                 lambda: self.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
+                              lambda: self.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
         # Initial Text
         self.label_description.setText("<strong>Stock Finding</strong> Algorithms")
-
 
         ## SHOW ==> MAIN WINDOW
         self.show()

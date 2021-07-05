@@ -99,7 +99,7 @@ def get_current_yf_price(ticker: yf.Ticker or pandas.core.frame.DataFrame or str
         todays_data = ticker.history(period='1d')
         return decimal2_float(todays_data['Close'][0])
     if type(ticker) is pandas.core.frame.DataFrame:
-        return decimal2_float(ticker['Close'][len(ticker)-1])
+        return decimal2_float(ticker['Close'][len(ticker)-1])  # try [-1:]
 
 
 def dumb_risk_analysis() -> dict:
@@ -226,6 +226,51 @@ def dumb_risk_analysis_tostring(risk_dict: dict) -> str:
         return Style.RED + f"Ticker is not valid, but buy: {risk_dict['RISK/RISK_CANDLE']} shares!" + Style.END
 
 
+def is_consolidating(df: pandas.core.frame.DataFrame, percentage=2.5, look_back_data=15) -> bool:
+    """
+    Checks if a ticker is in a consolidation state relative to the given percentage parameter
+    By Part Time Larry - Finding Breakout Candidates with Python and Pandas
+    :param look_back_data: how many days to look back on (+1) default is 15 (14 days)
+    :type look_back_data: int
+    :param df: Dataframe
+    :type df: pandas.core.frame.DataFrame
+    :param percentage: percentage consolidation pattern default is 2.5
+    :type percentage: float
+    :return: if ticker is in consolidation pattern
+    :rtype: bool
+    """
+    recent_candlesticks = df[-look_back_data:]  # Takes the last two weeks of data
+    max_close = recent_candlesticks['Close'].max()  # finds min of close price df
+    min_close = recent_candlesticks['Close'].min()  # find max of close price df
+    threshold = 1 - (percentage / 100)
+    if min_close > (max_close * threshold):
+        return True
+    return False
+
+
+def is_breaking_consolidation(df: pandas.core.frame.DataFrame, percentage=2.5, look_back_data=15) -> bool:
+    """
+    Checks if a ticker is breaking out from consolidation state relative to the given percentage parameter
+    By Part Time Larry - Finding Breakout Candidates with Python and Pandas
+    :param look_back_data: how many days to look back on (+1) default is 15 (14 days)
+    :type look_back_data: int
+    :param df: Dataframe
+    :type df: pandas.core.frame.DataFrame
+    :param percentage: percentage consolidation pattern default is 2.5
+    :type percentage: float
+    :return:
+    :rtype:
+    """
+    last_close = df[-1:]['Close'].values[0]  # Last close value
+    if is_consolidating(df[:-1], percentage=percentage, look_back_data=look_back_data):
+        # df[:-1] will go to up to but exclude last day (last_close)
+        # Basically all the data but the last row.
+        recent_closes = df[-look_back_data:-1]
+        if last_close > recent_closes['Close'].max():
+            return True
+    return False
+
+
 def load_tickers_from_ini() -> list:
     """
     Load a list of tickers from ini file location config.FILE_PATH['INI']
@@ -250,10 +295,10 @@ def get_gap(ticker: str or yf.Ticker or pandas.core.frame.DataFrame) -> float:
         ticker = yf.Ticker(ticker)
     if type(ticker) is yf.Ticker:
         history = ticker.history(period='2d')
-        return decimal2_float(history['Open'][1] - history['Close'][0])
+        return decimal2_float(history['Open'][1] - history['Close'][0]) # try [-2] - # try [-1]?
     if type(ticker) is pandas.core.frame.DataFrame:
         df = ticker.reset_index()
-        start_value = len(df)-2
+        start_value = len(df)-2 # Negative index [-2]
         end_value = len(df)-1
         df = df.loc[start_value:end_value]
         return decimal2_float(df['Open'][end_value]-df['Close'][start_value])
