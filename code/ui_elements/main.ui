@@ -32,7 +32,10 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
-      <widget class="QWidget" name="page">
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <widget class="QWidget" name="ttm_page">
        <widget class="QFrame" name="ttm_frame">
         <property name="geometry">
          <rect>
@@ -57,7 +60,7 @@
         <widget class="QLabel" name="label_title">
          <property name="geometry">
           <rect>
-           <x>220</x>
+           <x>260</x>
            <y>10</y>
            <width>231</width>
            <height>71</height>
@@ -82,7 +85,7 @@
         <widget class="QLabel" name="label_description">
          <property name="geometry">
           <rect>
-           <x>80</x>
+           <x>120</x>
            <y>70</y>
            <width>541</width>
            <height>81</height>
@@ -159,7 +162,230 @@ p, li { white-space: pre-wrap; }
         </widget>
        </widget>
       </widget>
-      <widget class="QWidget" name="page_2"/>
+      <widget class="QWidget" name="day_momentum_page">
+       <widget class="QFrame" name="ttm_frame_3">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>801</width>
+          <height>551</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QFrame {	
+	background-color: rgb(56, 58, 89);	
+	border-radius: 10px;
+}</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QLabel" name="label_title_3">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>10</y>
+           <width>271</width>
+           <height>71</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+           <pointsize>40</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(254, 121, 199);</string>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Momentum Trading&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_description_3">
+         <property name="geometry">
+          <rect>
+           <x>110</x>
+           <y>70</y>
+           <width>541</width>
+           <height>81</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+           <pointsize>14</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(98, 114, 164);</string>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Momentum Daily Trading analysis is based on SMAs, &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;A first 'elephant' candle and GAP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="analyze_button_3">
+         <property name="geometry">
+          <rect>
+           <x>530</x>
+           <y>260</y>
+           <width>91</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">	background-color: rgb(98, 114, 152);	
+	color: rgb(210, 215, 228);
+	border-radius: 10px;</string>
+         </property>
+         <property name="text">
+          <string>Analyize</string>
+         </property>
+        </widget>
+        <widget class="QTextEdit" name="results_edit_3">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>180</y>
+           <width>361</width>
+           <height>201</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(98, 114, 152);</string>
+         </property>
+         <property name="html">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:7.8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="consolidation_page">
+       <widget class="QFrame" name="ttm_frame_2">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>801</width>
+          <height>551</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QFrame {	
+	background-color: rgb(56, 58, 89);	
+	border-radius: 10px;
+}</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QLabel" name="label_title_2">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>10</y>
+           <width>331</width>
+           <height>71</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+           <pointsize>40</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(254, 121, 199);</string>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;Consolidation Patterns&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_description_2">
+         <property name="geometry">
+          <rect>
+           <x>120</x>
+           <y>80</y>
+           <width>521</width>
+           <height>71</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+           <pointsize>14</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(98, 114, 164);</string>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Based on analysis done by Consolidation Patterns&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;&amp;amp; Consolidation Patterns break-outs (to the upside)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="analyze_button_2">
+         <property name="geometry">
+          <rect>
+           <x>540</x>
+           <y>310</y>
+           <width>91</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">	background-color: rgb(98, 114, 152);	
+	color: rgb(210, 215, 228);
+	border-radius: 10px;</string>
+         </property>
+         <property name="text">
+          <string>Analyize</string>
+         </property>
+        </widget>
+        <widget class="QTextEdit" name="results_edit_2">
+         <property name="geometry">
+          <rect>
+           <x>110</x>
+           <y>160</y>
+           <width>361</width>
+           <height>341</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(98, 114, 152);</string>
+         </property>
+         <property name="html">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:7.8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </widget>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -179,8 +405,17 @@ p, li { white-space: pre-wrap; }
     </property>
     <addaction name="actionTTM_Squeeze"/>
     <addaction name="actionDay_Trading_Momentum"/>
+    <addaction name="actionConsolidation_Patterns"/>
+   </widget>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionAbout"/>
+    <addaction name="actionExit"/>
    </widget>
    <addaction name="menuAlgorithms"/>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionTTM_Squeeze">
@@ -191,6 +426,21 @@ p, li { white-space: pre-wrap; }
   <action name="actionDay_Trading_Momentum">
    <property name="text">
     <string>Day Trading Momentum</string>
+   </property>
+  </action>
+  <action name="actionConsolidation_Patterns">
+   <property name="text">
+    <string>Consolidation Patterns</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
    </property>
   </action>
  </widget>
