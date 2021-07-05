@@ -19,6 +19,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.center()
         self.oldPos = self.pos()
         self.consolidation_bar.hide()
+
+        # Global Attributes:
+        self.data_1d_exists = False
+
         # Triggers and connections:
         self.actionDay_Trading_Momentum.triggered.connect(self.momentum_page_open)
         self.actionTTM_Squeeze.triggered.connect(self.ttm_page_open)
@@ -40,6 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.consolidation_bar.setValue(0)
         total_for_bar = 100/len(tickers)
         counter = 1
+        tickers_data = {}
 
         for ticker in tickers:
             df = yf.download(ticker)  # Need to download all to csv and use that
@@ -49,6 +54,25 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.results_edit_2.append(f'{ticker} is breaking out of consolidation!')
             self.consolidation_bar.setValue(int(total_for_bar * counter))
             counter += 1
+
+
+    def download_updated_data_to_csv(self):
+        ticker_list = yf_func.load_tickers_from_ini()
+        data = yf.download(
+            tickers=ticker_list,
+            period='1y',
+            interval='1d',
+            group_by='ticker',
+            auto_adjust=False,
+            prepost=False,
+            threads=True,
+            proxy=None
+        )
+        data = data.T
+        for ticker in ticker_list:
+            data.loc[(ticker,),].T.to_csv(config.FILE_PATHS['1D_DATA'] + ticker + '.csv', sep=',', encoding='utf-8')
+        self.data_1d_exists = True
+
 
     def ttm_page_open(self):
         self.stackedWidget.setCurrentIndex(0)

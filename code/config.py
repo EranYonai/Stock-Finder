@@ -15,5 +15,6 @@ def resource_path(relative_path):
 
 FILE_PATHS = {'INI': resource_path('dependencies\\initialization.ini'),
               'MAIN_UI': resource_path('ui_elements\\main.ui'),
-              'SPLASH_UI': resource_path('ui_elements\\splash_screen.ui')
+              'SPLASH_UI': resource_path('ui_elements\\splash_screen.ui'),
+              '1D_DATA': resource_path('data\\1D\\')
               }
