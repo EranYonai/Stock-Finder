@@ -3,18 +3,70 @@ import platform
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
 import config
 import yfinance as yf
+import pandas as pd
 import yf_functions as yf_func
+from datetime import datetime
+import configparser, os.path, glob
 
 ## ==> GLOBALS
 counter = 0
 
 
+# Global methods:
+
+def set_ini_date(date=None):
+    """
+    Update ini file 1d date sections
+    :param date: date to update, if None enter the current date
+    :type date: str
+    """
+    if date == None:
+        date = datetime.today().strftime('%Y-%d-%m')
+    cp = configparser.ConfigParser()
+    cp.read(config.FILE_PATHS['INI'])
+    cp.set(config.INI_SECTIONS['DATA'], config.INI_DATA['1D'], date)
+    with open(config.FILE_PATHS['INI'], 'w') as configfile:
+        cp.write(configfile)
+
+
+def get_ini_date():
+    """
+    get date from ini file
+    :return: date in %y-%d-%m format
+    :rtype: str
+    """
+    cp = configparser.ConfigParser()
+    cp.read(config.FILE_PATHS['INI'])
+    return cp.get(config.INI_SECTIONS['DATA'], config.INI_DATA['1D'])
+
+
+def dir_is_empty(dir: str):
+    """
+    checks if a directory is empty
+    :param dir: dir path with // in the end
+    :type dir: str
+    :return: true if empty, false if not
+    :rtype: bool
+    """
+    files = glob.glob(dir + '*')
+    if len(files) >= 1:
+        return False
+    return True
+
+
 class MainWindow(QtWidgets.QMainWindow):
+    """
+    Main dialog of the application
+    """
+
     def __init__(self):
+        """
+        init - initialize on dialog call.
+        """
         super(MainWindow, self).__init__()
         uic.loadUi(config.FILE_PATHS['MAIN_UI'], self)
         # On initialization:
-        self.setWindowFlag(QtCore.Qt.FramelessWindowHint) # Remove titlebar
+        self.setWindowFlag(QtCore.Qt.FramelessWindowHint)  # Remove titlebar
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)  # Remove titlebar ^^ Works!
         self.center()
         self.oldPos = self.pos()
@@ -30,34 +82,53 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionExit.triggered.connect(self.close)
         self.analyze_button_2.clicked.connect(self.consolidation_scan)
 
-
     def consolidation_page_open(self):
+        """
+        change stackedWidget to consolidation page
+        :return:
+        :rtype:
+        """
         self.stackedWidget.setCurrentIndex(2)
 
-
     def consolidation_scan(self):
-        tickers = yf_func.load_tickers_from_ini()
-        percentage = float(self.percentage_text.text())
-        lookback = int(self.lookback_text.text())
+        """
+        On 'analiyze_button' press - scans for consolidation patterns in ini tickers.
+        :return:
+        :rtype:
+        """
+        tickers = yf_func.load_tickers_from_ini()  # load tickers from ini
+        percentage = float(self.percentage_text.text())  # get percentage from textbox
+        lookback = int(self.lookback_text.text())  # get lookback (days to look for consolidation) from textbox
 
-        self.consolidation_bar.show()
-        self.consolidation_bar.setValue(0)
-        total_for_bar = 100/len(tickers)
+        self.consolidation_bar.show()  # show the bar
+        self.consolidation_bar.setValue(0)  # start progress bar from zero
+        total_for_bar = 100 / len(tickers)  # each ticker is a % of the total 100%
         counter = 1
-        tickers_data = {}
-
-        for ticker in tickers:
-            df = yf.download(ticker)  # Need to download all to csv and use that
-            if yf_func.is_consolidating(df, percentage=percentage, look_back_data=lookback):
-                self.results_edit_2.append(f'{ticker} is consolidating')
-            if yf_func.is_breaking_consolidation(df, percentage=percentage, look_back_data=lookback):
-                self.results_edit_2.append(f'{ticker} is breaking out of consolidation!')
-            self.consolidation_bar.setValue(int(total_for_bar * counter))
-            counter += 1
-
+        date = datetime.today().strftime('%Y-%d-%m')  # current date
+        try:
+            if not (get_ini_date()) or dir_is_empty(
+                    config.FILE_PATHS['1D_DATA']):  # not(date) or empty | is material implication
+                self.download_updated_data_to_csv()  # download tickers data to csv at code/data/1D
+                set_ini_date(date)  # set ini date to current date for future reference
+            self.results_edit_2.setText('')  # clears text edit.
+            for ticker in tickers:
+                df = pd.read_csv(config.FILE_PATHS['1D_DATA'] + ticker + '.csv')  # read from csv file to df
+                if yf_func.is_consolidating(df, percentage=percentage, look_back_data=lookback):
+                    self.results_edit_2.append(f'{ticker} is consolidating')
+                if yf_func.is_breaking_consolidation(df, percentage=percentage, look_back_data=lookback):
+                    self.results_edit_2.append(f'{ticker} is breaking out of consolidation!')
+                self.consolidation_bar.setValue(int(total_for_bar * counter))  # update bar
+                counter += 1
+        except Exception as e:
+            print(e)
 
     def download_updated_data_to_csv(self):
-        ticker_list = yf_func.load_tickers_from_ini()
+        """
+        download updated tickers data using yfinance.download threaded.
+        :return:
+        :rtype:
+        """
+        ticker_list = yf_func.load_tickers_from_ini()  # get tickers list.
         data = yf.download(
             tickers=ticker_list,
             period='1y',
@@ -68,11 +139,22 @@ class MainWindow(QtWidgets.QMainWindow):
             threads=True,
             proxy=None
         )
-        data = data.T
-        for ticker in ticker_list:
-            data.loc[(ticker,),].T.to_csv(config.FILE_PATHS['1D_DATA'] + ticker + '.csv', sep=',', encoding='utf-8')
-        self.data_1d_exists = True
+        data = data.T  # switch columns and rows for df
+        if not dir_is_empty(config.FILE_PATHS['1D_DATA']):  # if the directory is not empty, delete all csv files.
+            files = glob.glob(config.FILE_PATHS['1D_DATA'] + '\*.csv')
+            for f in files:
+                os.remove(f)
+        try:  # verify that the directory exists, if not, create it.
+            os.makedirs(config.FILE_PATHS['1D_DATA'])
+        except Exception as e:
+            print(e)
 
+        for ticker in ticker_list:  # insert df data to csv files.
+            f = open(config.FILE_PATHS['1D_DATA'] + ticker + '.csv', 'w')
+            data.loc[(ticker,),].T.to_csv(config.FILE_PATHS['1D_DATA'] + ticker + '.csv', sep=',', encoding='utf-8')
+
+        set_ini_date()  # set the current day to ini file
+        self.data_1d_exists = True  # not used...
 
     def ttm_page_open(self):
         self.stackedWidget.setCurrentIndex(0)
@@ -100,7 +182,6 @@ class SplashScreen(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         uic.loadUi(config.FILE_PATHS['SPLASH_UI'], self)
-
 
         ## REMOVE TITLE BAR
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
@@ -135,16 +216,12 @@ class SplashScreen(QtWidgets.QMainWindow):
         if counter > 100:
             self.timer.stop()
             # SHOW MAIN WINDOW
-            try:
-                self.main = MainWindow()
-                self.main.show()
-            except Exception as e:
-                print(e)
+            self.main = MainWindow()
+            self.main.show()
             # CLOSE SPLASH SCREEN
             self.close()
 
         counter += 1
-
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()

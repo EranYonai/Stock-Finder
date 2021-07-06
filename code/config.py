@@ -18,3 +18,8 @@ FILE_PATHS = {'INI': resource_path('dependencies\\initialization.ini'),
               'SPLASH_UI': resource_path('ui_elements\\splash_screen.ui'),
               '1D_DATA': resource_path('data\\1D\\')
               }
+
+INI_SECTIONS = {'TICKERS': 'Tickers',
+                'DATA': 'DATA'}
+
+INI_DATA = {'1D': 'data_1d_date'}
