@@ -6,7 +6,7 @@ import yfinance as yf
 import pandas as pd
 import yf_functions as yf_func
 from datetime import datetime
-import configparser, os.path, glob
+import configparser, os.path, glob, traceback
 
 ## ==> GLOBALS
 counter = 0
@@ -121,6 +121,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 counter += 1
         except Exception as e:
             print(e)
+            traceback.print_exc()
 
     def download_updated_data_to_csv(self):
         """
@@ -148,6 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
             os.makedirs(config.FILE_PATHS['1D_DATA'])
         except Exception as e:
             print(e)
+            traceback.print_exc()
 
         for ticker in ticker_list:  # insert df data to csv files.
             f = open(config.FILE_PATHS['1D_DATA'] + ticker + '.csv', 'w')
