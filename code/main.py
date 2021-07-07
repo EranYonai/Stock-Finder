@@ -29,7 +29,7 @@ def set_ini_date(date=None):
         cp.write(configfile)
 
 
-def get_ini_date():
+def get_ini_date() -> str:
     """
     get date from ini file
     :return: date in %y-%d-%m format
@@ -40,7 +40,7 @@ def get_ini_date():
     return cp.get(config.INI_SECTIONS['DATA'], config.INI_DATA['1D'])
 
 
-def dir_is_empty(dir: str):
+def dir_is_empty(dir: str) -> bool:
     """
     checks if a directory is empty
     :param dir: dir path with // in the end
@@ -71,6 +71,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.center()
         self.oldPos = self.pos()
         self.consolidation_bar.hide()
+        self.short_long_label.hide()
 
         # Global Attributes:
         self.data_1d_exists = False
@@ -81,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionConsolidation_Patterns.triggered.connect(self.consolidation_page_open)
         self.actionExit.triggered.connect(self.close)
         self.analyze_button_2.clicked.connect(self.consolidation_scan)
+        self.analyze_button_3.clicked.connect(self.momentum_ticker)
 
     def consolidation_page_open(self):
         """
@@ -106,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
         counter = 1
         date = datetime.today().strftime('%Y-%d-%m')  # current date
         try:
-            if not (get_ini_date()) or dir_is_empty(
+            if not (get_ini_date() == date) or dir_is_empty(
                     config.FILE_PATHS['1D_DATA']):  # not(date) or empty | is material implication
                 self.download_updated_data_to_csv()  # download tickers data to csv at code/data/1D
                 set_ini_date(date)  # set ini date to current date for future reference
@@ -159,21 +161,83 @@ class MainWindow(QtWidgets.QMainWindow):
         self.data_1d_exists = True  # not used...
 
     def ttm_page_open(self):
+        """
+        change stackedWidget to ttm page
+        :return:
+        :rtype:
+        """
         self.stackedWidget.setCurrentIndex(0)
 
     def momentum_page_open(self):
+        """
+        change stackedWidget to momentum page
+        :return:
+        :rtype:
+        """
         self.stackedWidget.setCurrentIndex(1)
 
+    def momentum_ticker(self):
+        """
+        Shows calculation of risk_dict of a certain ticker, with certain risk (taken from textboxes)
+        :return:
+        :rtype:
+        """
+        self.results_edit_3.setText('')
+        try:
+            risk_analysis = yf_func.risk_analysis(yf.Ticker(self.ticker_text.text()), int(self.risk_text.text()))
+            risk_answer = risk_analysis
+            if not yf_func.trading_day_started():
+                self.results_edit_3.append(
+                    "Risk candle is based on GAP since data on the first candle of the day is unavailable.")
+            self.results_edit_3.append(yf_func.dumb_risk_analysis_tostring(risk_answer))
+            df = pd.read_csv(config.FILE_PATHS['1D_DATA'] + self.ticker_text.text() + '.csv')
+            sma = [20, 50, 100, 200]
+            for i in sma:
+                self.results_edit_3.append(f'SMA {str(i)}: {yf_func.get_SMA(df, i)}')
+            self.results_edit_3.append(f'Last day of trading change: {yf_func.get_last_day_percentage(df)}%')
+
+            if risk_analysis['SHORT/LONG'] == 'LONG':
+                self.short_long_label.setStyleSheet('background-color: rgb(24, 124, 41)')
+                self.short_long_label.setText('Long')
+                self.short_long_label.show()
+            else:
+                self.short_long_label.setStyleSheet('background-color: rgb(193, 44, 44)')
+                self.short_long_label.setText('Short')
+                self.short_long_label.show()
+
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+
     def center(self):
+        """
+        Centers the Window Dialog.
+        :return:
+        :rtype:
+        """
         qr = self.frameGeometry()
         cp = QtWidgets.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
     def mousePressEvent(self, event):
+        """
+        Mouse Event
+        :param event: mouse event
+        :type event: event
+        :return:
+        :rtype:
+        """
         self.oldPos = event.globalPos()
 
     def mouseMoveEvent(self, event):
+        """
+        Mouse Move Event
+        :param event: mouse move event
+        :type event: event
+        :return:
+        :rtype:
+        """
         delta = QtCore.QPoint(event.globalPos() - self.oldPos)
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self.oldPos = event.globalPos()
@@ -181,7 +245,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # SPLASH SCREEN
 class SplashScreen(QtWidgets.QMainWindow):
+    """
+    Splash Screen window dialog, borderless
+    """
     def __init__(self):
+        """
+        On initialization of Splash Screen
+        """
         QtWidgets.QMainWindow.__init__(self)
         uic.loadUi(config.FILE_PATHS['SPLASH_UI'], self)
 
@@ -208,7 +278,6 @@ class SplashScreen(QtWidgets.QMainWindow):
         self.show()
 
     ## ==> APP FUNCTIONS
-    ########################################################################
     def progress(self):
         global counter
         # SET VALUE TO PROGRESS BAR

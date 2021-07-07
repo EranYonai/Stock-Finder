@@ -14,9 +14,13 @@ import urllib.request
 from datetime import datetime
 import time
 
+# Global Variables
+
 SYSTEM_TIME = datetime.now().strftime("%H:%M").split(':')
 SYSTEM_TIME = [int(i) for i in SYSTEM_TIME]
 
+
+# Helper functions
 
 def check_connection(host='https://finance.yahoo.com/'):
     """
@@ -99,8 +103,125 @@ def get_current_yf_price(ticker: yf.Ticker or pandas.core.frame.DataFrame or str
         todays_data = ticker.history(period='1d')
         return decimal2_float(todays_data['Close'][0])
     if type(ticker) is pandas.core.frame.DataFrame:
-        return decimal2_float(ticker['Close'][len(ticker)-1])  # try [-1:]
+        return decimal2_float(ticker['Close'][len(ticker) - 1])  # try [-1:]
 
+
+def trading_day_started() -> bool:
+    """
+    Checks if trading day has started according to Summer IL clock
+    :return: true if session has started, else false
+    :rtype: bool
+    """
+    if SYSTEM_TIME[0] > 16:
+        return True
+    elif SYSTEM_TIME[0] >= 16 and SYSTEM_TIME[1] >= 30:
+        return True
+    else:
+        return False
+
+
+def load_tickers_from_ini() -> list:
+    """
+    Load a list of tickers from ini file location config.FILE_PATH['INI']
+    :return: List of tickers
+    :rtype: list
+    """
+    config = configparser.ConfigParser()
+    config.read(cfg.FILE_PATHS['INI'])
+    return config['Tickers']['ticker_list'].split(' ')
+
+
+def get_gap(ticker: str or yf.Ticker or pandas.core.frame.DataFrame) -> float:
+    """
+    Function that can get either str or yfinance object and calculate gap.
+    GAP is calculated todays_open - yesterday_close
+    :param ticker: Ticker name or Ticker object
+    :type ticker: str or yf.Ticker or pandas.core.frame.DataFrame
+    :return: 2 decimal float of GAP candle
+    :rtype: float
+    """
+    if type(ticker) is str:
+        ticker = yf.Ticker(ticker)
+
+    if type(ticker) is yf.Ticker:
+        history = ticker.history(period='2d')
+        return decimal2_float(history['Open'][1] - history['Close'][0])  # try [-2] - # try [-1]?
+
+    if type(ticker) is pandas.core.frame.DataFrame:
+        df = ticker.reset_index()
+        return decimal2_float(df['Open'][-1] - df['Close'][-2])
+
+
+def get_SMA(ticker: yf.Ticker or pandas.core.frame.DataFrame, sma: int) -> float:
+    """
+    Calculate SMA
+    :param ticker: a ticker
+    :type ticker: yf.Ticker or pandas.core.frame.DataFrame
+    :param sma: sma
+    :type sma: int
+    :return: SMA
+    :rtype: float
+    """
+    if type(ticker) is yf.Ticker:
+        history = ticker.history(period='' + str(sma) + 'd')
+        return decimal2_float(history['Close'].mean())
+    if type(ticker) is pandas.core.frame.DataFrame:
+        df = ticker.reset_index()
+        df = df.loc[len(df) - sma:len(df)]
+        return decimal2_float(df['Close'].mean())
+
+
+def get_1st_candle(ticker: yf.Ticker or pandas.core.frame.DataFrame or str, interval='2m') -> float:
+    """
+    Get 1st candle of the day according to interval, if dataframe is given, ignore interval and use the dataframe's
+    :param ticker: Ticker
+    :type ticker: yf.Ticker or pandas.core.frame.DataFrame or str
+    :param interval: interval in 1m,2m,5m,30m,1h template
+    :type interval:str
+    :return: 1st candle size according to the interval
+    :rtype: float
+    """
+    if type(ticker) is str:
+        ticker = yf.Ticker(ticker)
+    if type(ticker) is yf.Ticker:
+        history = ticker.history(period='1d', interval=interval)
+        return decimal2_float(history['Close'][0] - history['Open'][0])
+    if type(ticker) is pandas.core.frame.DataFrame:
+        ticker = ticker.reset_index()
+        return ticker['Close'][0] - ticker['Open'][0]  #
+
+
+def get_last_day_percentage(ticker: yf.Ticker or pandas.core.frame.DataFrame) -> float:
+    """
+    Get the last day of trading's percentage change
+    :param ticker: a ticker
+    :type ticker: yf.Ticker or pandas.core.frame.DataFrame
+    :return: percentage as float
+    :rtype: float
+    """
+    # There are two cases: -% and +%
+    # need to check if we're during the day or no (up period to 3d and calculate [1] & [2]
+    # validate!!!
+    period = 3 if SYSTEM_TIME[0] > 16 and SYSTEM_TIME[1] >= 30 else 2
+    # ^^ basically, if current time is >16:30 take period of 3d thus getting yesterday's daily change and not today's
+    if type(ticker) is yf.Ticker:
+        history = ticker.history(period=str(period) + 'd')
+        if history['Close'][1] >= history['Close'][0]:
+            return decimal2_float(((history['Close'][1] / history['Close'][0]) - 1) * 100)
+        else:
+            return -decimal2_float((1 - history['Close'][1] / history['Close'][0]) * 100)
+    if type(ticker) is pandas.core.frame.DataFrame:
+        df = ticker.reset_index()
+        start_value = len(df) - period
+        end_value = len(df) - 1
+        df = df.loc[start_value:end_value]
+        if df['Close'][end_value] >= df['Close'][start_value]:
+            return decimal2_float(((df['Close'][end_value] / df['Close'][start_value]) - 1) * 100)
+        else:
+            return -decimal2_float(((df['Close'][end_value] / df['Close'][start_value]) - 1) * 100)
+
+
+# Shaked's Strategy
 
 def dumb_risk_analysis() -> dict:
     """
@@ -133,31 +254,26 @@ def risk_dict(risk: float, risk_candle: float, current_stock_price: float) -> di
     :return: dictionary with all relevant information
     :rtype: dict
     """
-    dict_return = {'RISK/RISK_CANDLE': decimal2_float(risk / risk_candle),
-                   'RISK_CANDLE': risk_candle,
+    short_long = 'LONG'
+    if risk_candle < 0:
+        short_long = 'SHORT'
+    dict_return = {'RISK/RISK_CANDLE': abs(decimal2_float(risk / risk_candle)),
+                   'RISK_CANDLE': abs(risk_candle),
                    'RISK': risk,
+                   'SHORT/LONG': short_long,
                    'CURRENT_PRICE': None
                    }
 
     if current_stock_price is not None:
         dict_return |= {
-            'TRANSACTION_SIZE': decimal2_float(dict_return['RISK/RISK_CANDLE'] * current_stock_price),
-            'CURRENT_PRICE': decimal2_float(current_stock_price),
-            'PROFIT*1': decimal2_float(current_stock_price + risk_candle),
-            'PROFIT*2': decimal2_float(current_stock_price + (risk_candle * 2)),
-            'PROFIT*3': decimal2_float(current_stock_price + (risk_candle * 3))
+            'TRANSACTION_SIZE': abs(decimal2_float(dict_return['RISK/RISK_CANDLE'] * current_stock_price)),
+            'CURRENT_PRICE': abs(decimal2_float(current_stock_price)),
+            'PROFIT*1': abs(decimal2_float(current_stock_price + risk_candle)),
+            'PROFIT*2': abs(decimal2_float(current_stock_price + (risk_candle * 2))),
+            'PROFIT*3': abs(decimal2_float(current_stock_price + (risk_candle * 3)))
         }
-        dict_return |= {'STOP_LOSS': decimal2_float(dict_return['CURRENT_PRICE'] - dict_return['RISK_CANDLE'])}
+        dict_return |= {'STOP_LOSS': abs(decimal2_float(dict_return['CURRENT_PRICE'] - dict_return['RISK_CANDLE']))}
     return dict_return
-
-
-def trading_day_started() -> bool:
-    """
-    Checks if trading day has started according to Summer IL clock
-    :return: true if session has started, else false
-    :rtype: bool
-    """
-    return True if int(SYSTEM_TIME[0]) > 16 and int(SYSTEM_TIME[1]) >= 30 else False
 
 
 def risk_analysis(ticker: yf.Ticker or str, risk: float or int) -> dict:
@@ -178,7 +294,7 @@ def risk_analysis(ticker: yf.Ticker or str, risk: float or int) -> dict:
     return risk_dict(risk, gap, get_current_yf_price(ticker))
 
 
-def dumb_risk_analysis_tostring(risk_dict: dict) -> str:
+def dumb_risk_analysis_tostring(risk_dict: dict, colored=False) -> str:
     """
     This method returns a string with the following information:
     Amount of shares to buy, risk, total cost, suggested stop loss, gain limits 2x-4x.
@@ -209,22 +325,41 @@ def dumb_risk_analysis_tostring(risk_dict: dict) -> str:
         RESET = '\033[0m'
 
     os.system("")
-    if risk_dict['CURRENT_PRICE'] is not None:
-        return (
-                f"You'll need to buy "
-                + Style.YELLOW + f"{risk_dict['RISK/RISK_CANDLE']}" + Style.END +
-                f" shares "
-                + Style.YELLOW + f"@{risk_dict['CURRENT_PRICE']}$" + Style.END +
-                f" in the total cost of "
-                + Style.YELLOW + f"@{risk_dict['TRANSACTION_SIZE']}$ " + Style.END
-                + Style.RED + f"\nStop loss @{risk_dict['STOP_LOSS']}" + Style.END
-                + Style.BOLD + f"\nPossible stops:" + Style.END
-                + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*1']}$ for a {risk_dict['RISK']}$ gain (x2 the risk) " + Style.END
-                + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*2']}$ for a {risk_dict['RISK'] * 2}$ gain (x3 the risk)" + Style.END
-                + Style.GREEN2 + f"\n    Sell in @{risk_dict['PROFIT*3']}$ for a {risk_dict['RISK'] * 3}$ gain (x4 the risk)" + Style.END)
+    if colored:
+        if risk_dict['CURRENT_PRICE'] is not None:
+            return (
+                    f"You'll need to buy "
+                    + Style.YELLOW + f"{risk_dict['RISK/RISK_CANDLE']}" + Style.END +
+                    f" shares "
+                    + Style.YELLOW + f"@{risk_dict['CURRENT_PRICE']}$" + Style.END +
+                    f" in the total cost of "
+                    + Style.YELLOW + f"@{risk_dict['TRANSACTION_SIZE']}$ " + Style.END
+                    + Style.RED + f"\nStop loss @{risk_dict['STOP_LOSS']}" + Style.END
+                    + Style.BOLD + f"\nPossible stops:" + Style.END
+                    + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*1']}$ for a {risk_dict['RISK']}$ gain (x2 the risk) " + Style.END
+                    + Style.GREEN + f"\n    Sell in @{risk_dict['PROFIT*2']}$ for a {risk_dict['RISK'] * 2}$ gain (x3 the risk)" + Style.END
+                    + Style.GREEN2 + f"\n    Sell in @{risk_dict['PROFIT*3']}$ for a {risk_dict['RISK'] * 3}$ gain (x4 the risk)" + Style.END)
+        else:
+            return Style.RED + f"Ticker is not valid, but buy: {risk_dict['RISK/RISK_CANDLE']} shares!" + Style.END
     else:
-        return Style.RED + f"Ticker is not valid, but buy: {risk_dict['RISK/RISK_CANDLE']} shares!" + Style.END
+        if risk_dict['CURRENT_PRICE'] is not None:
+            return (
+                f"You'll need to buy "
+                f"{risk_dict['RISK/RISK_CANDLE']}"
+                f" shares "
+                f"@{risk_dict['CURRENT_PRICE']}$"
+                f" in the total cost of "
+                f"@{risk_dict['TRANSACTION_SIZE']}$ "
+                f"\nStop loss @{risk_dict['STOP_LOSS']}"
+                f"\nPossible stops:"
+                f"\n    Sell in @{risk_dict['PROFIT*1']}$ for a {risk_dict['RISK']}$ gain (x2 the risk) "
+                f"\n    Sell in @{risk_dict['PROFIT*2']}$ for a {risk_dict['RISK'] * 2}$ gain (x3 the risk)"
+                f"\n    Sell in @{risk_dict['PROFIT*3']}$ for a {risk_dict['RISK'] * 3}$ gain (x4 the risk)")
+        else:
+            return f"Ticker is not valid, but buy: {risk_dict['RISK/RISK_CANDLE']} shares!"
 
+
+# Consolidation Pattern Strategy:
 
 def is_consolidating(df: pandas.core.frame.DataFrame, percentage=2.5, look_back_data=15) -> bool:
     """
@@ -269,108 +404,6 @@ def is_breaking_consolidation(df: pandas.core.frame.DataFrame, percentage=2.5, l
         if last_close > recent_closes['Close'].max():
             return True
     return False
-
-
-def load_tickers_from_ini() -> list:
-    """
-    Load a list of tickers from ini file location config.FILE_PATH['INI']
-    :return: List of tickers
-    :rtype: list
-    """
-    config = configparser.ConfigParser()
-    config.read(cfg.FILE_PATHS['INI'])
-    return config['Tickers']['ticker_list'].split(' ')
-
-
-def get_gap(ticker: str or yf.Ticker or pandas.core.frame.DataFrame) -> float:
-    """
-    Function that can get either str or yfinance object and calculate gap.
-    GAP is calculated todays_open - yesterday_close
-    :param ticker: Ticker name or Ticker object
-    :type ticker: str or yf.Ticker or pandas.core.frame.DataFrame
-    :return: 2 decimal float of GAP candle
-    :rtype: float
-    """
-    if type(ticker) is str:
-        ticker = yf.Ticker(ticker)
-    if type(ticker) is yf.Ticker:
-        history = ticker.history(period='2d')
-        return decimal2_float(history['Open'][1] - history['Close'][0]) # try [-2] - # try [-1]?
-    if type(ticker) is pandas.core.frame.DataFrame:
-        df = ticker.reset_index()
-        start_value = len(df)-2 # Negative index [-2]
-        end_value = len(df)-1
-        df = df.loc[start_value:end_value]
-        return decimal2_float(df['Open'][end_value]-df['Close'][start_value])
-
-
-def get_SMA(ticker: yf.Ticker or pandas.core.frame.DataFrame, SMA: int) -> float:
-    """
-    Calculate SMA
-    :param ticker: a ticker
-    :type ticker: yf.Ticker or pandas.core.frame.DataFrame
-    :param SMA: SMA
-    :type SMA: int
-    :return: SMA
-    :rtype: float
-    """
-    if type(ticker) is yf.Ticker:
-        history = ticker.history(period='' + str(SMA) + 'd')
-        return decimal2_float(history['Close'].mean())
-    if type(ticker) is pandas.core.frame.DataFrame:
-        df = ticker.reset_index()
-        df = df.loc[len(df)-SMA:len(df)]
-        return decimal2_float(df['Close'].mean())
-
-
-def get_1st_candle(ticker: yf.Ticker or pandas.core.frame.DataFrame or str, interval='5m') -> float:
-    """
-    Get 1st candle of the day according to interval, if dataframe is given, ignore interval and use the dataframe's
-    :param ticker: Ticker
-    :type ticker: yf.Ticker or pandas.core.frame.DataFrame or str
-    :param interval: interval in 1m,2m,5m,30m,1h template
-    :type interval:str
-    :return: 1st candle size according to the interval
-    :rtype: float
-    """
-    if type(ticker) is str:
-        ticker = yf.Ticker(ticker)
-    if type(ticker) is yf.Ticker:
-        history = ticker.history(period='1d', interval=interval)
-        return decimal2_float(history['Close'][0] - history['Open'][0])
-    if type(ticker) is pandas.core.frame.DataFrame:
-        ticker = ticker.reset_index()
-        return decimal2_float(ticker['Close'][0]-ticker['Open'][0])
-
-
-def get_last_day_percentage(ticker: yf.Ticker or pandas.core.frame.DataFrame) -> float:
-    """
-    Get the last day of trading's percentage change
-    :param ticker: a ticker
-    :type ticker: yf.Ticker or pandas.core.frame.DataFrame
-    :return: percentage as float
-    :rtype: float
-    """
-    # There are two cases: -% and +%
-    # need to check if we're during the day or no (up period to 3d and calculate [1] & [2]
-    # validate!!!
-    period = 3 if SYSTEM_TIME[0] > 16 and SYSTEM_TIME[1] >= 30 else 2
-    # ^^ basically, if current time is >16:30 take period of 3d thus getting yesterday's daily change and not today's
-    if type(ticker) is yf.Ticker:
-        history = ticker.history(period=str(period)+'d')
-        if history['Close'][1] >= history['Close'][0]:
-            return decimal2_float(((history['Close'][1] / history['Close'][0]) - 1) * 100)
-        else:
-            return -decimal2_float((1 - history['Close'][1] / history['Close'][0]) * 100)
-    if type(ticker) is pandas.core.frame.DataFrame:
-        df = ticker.reset_index()
-        start_value = len(df)-period
-        end_value = len(df)-1
-        df = df.loc[start_value:end_value]
-        if df['Close'][end_value] >= df['Close'][start_value]:
-            return decimal2_float(((df['Close'][end_value] / df['Close'][start_value]) - 1) * 100)
-        else:
-            return -decimal2_float(((df['Close'][end_value] / df['Close'][start_value]) - 1) * 100)
 
 
 if __name__ == "__main__":
