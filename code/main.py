@@ -72,6 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.oldPos = self.pos()
         self.consolidation_bar.hide()
         self.short_long_label.hide()
+        self.short_long_label_2.hide()
 
         # Global Attributes:
         self.data_1d_exists = False
@@ -80,9 +81,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionDay_Trading_Momentum.triggered.connect(self.momentum_page_open)
         self.actionTTM_Squeeze.triggered.connect(self.ttm_page_open)
         self.actionConsolidation_Patterns.triggered.connect(self.consolidation_page_open)
+        self.actionManual_Risk_Calculator.triggered.connect(self.manual_risk_open)
         self.actionExit.triggered.connect(self.close)
         self.analyze_button_2.clicked.connect(self.consolidation_scan)
         self.analyze_button_3.clicked.connect(self.momentum_ticker)
+        self.riskcalculate_button.clicked.connect(self.manual_risk)
 
     def consolidation_page_open(self):
         """
@@ -150,7 +153,6 @@ class MainWindow(QtWidgets.QMainWindow):
         try:  # verify that the directory exists, if not, create it.
             os.makedirs(config.FILE_PATHS['1D_DATA'])
         except Exception as e:
-            print(e)
             traceback.print_exc()
 
         for ticker in ticker_list:  # insert df data to csv files.
@@ -175,6 +177,39 @@ class MainWindow(QtWidgets.QMainWindow):
         :rtype:
         """
         self.stackedWidget.setCurrentIndex(1)
+
+    def manual_risk_open(self):
+        """
+        change stackedWidget to Manual Risk Calculator
+        :return:
+        :rtype:
+        """
+        self.stackedWidget.setCurrentIndex(3)
+
+    def manual_risk(self):
+        """
+        Calculate manual risk
+        :return:
+        :rtype:
+        """
+        entry_price = float(self.entryprice_edit.text())
+        protective_stop = float(self.stoploss_edit.text())
+        risk = float(self.risk_edit.text())
+        risk_result = yf_func.risk_dict(risk=risk, risk_candle=entry_price-protective_stop,
+                                        current_stock_price=entry_price)
+        string_result = yf_func.dumb_risk_analysis_tostring(risk_dict=risk_result)
+
+        if risk_result['SHORT/LONG'] == 'LONG':
+            self.short_long_label_2.setStyleSheet('background-color: rgb(24, 124, 41)')
+            self.short_long_label_2.setText('Long')
+            self.short_long_label_2.show()
+        else:
+            self.short_long_label_2.setStyleSheet('background-color: rgb(193, 44, 44)')
+            self.short_long_label_2.setText('Short')
+            self.short_long_label_2.show()
+        self.results_edit_4.setText(string_result)
+        # Problem with logic when shorting
+
 
     def momentum_ticker(self):
         """
