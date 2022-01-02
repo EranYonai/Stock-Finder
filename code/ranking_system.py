@@ -1,8 +1,7 @@
 import pandas.core.frame
-
-import yf_functions
 import yfinance as yf
 
+import yf_functions
 
 yf_functions.load_tickers_from_ini()
 

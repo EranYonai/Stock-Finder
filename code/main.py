@@ -1,19 +1,23 @@
+import configparser
+import glob
+import os.path
 import sys
-import platform
-from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
-import config
-import yfinance as yf
+
 import pandas as pd
-import yf_functions as yf_func
+import platform
+import traceback
+import yfinance as yf
+from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
 from datetime import datetime
-import configparser, os.path, glob, traceback
+
+import config
+import yf_functions as yf_func
 
 ## ==> GLOBALS
 counter = 0
 
 
 # Global methods:
-
 def set_ini_date(date=None):
     """
     Update ini file 1d date sections
@@ -73,7 +77,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.consolidation_bar.hide()
         self.short_long_label.hide()
         self.short_long_label_2.hide()
-
         # Global Attributes:
         self.data_1d_exists = False
 
@@ -308,7 +311,6 @@ class SplashScreen(QtWidgets.QMainWindow):
                               lambda: self.label_description.setText("<strong>LOADING</strong> USER INTERFACE"))
         # Initial Text
         self.label_description.setText("<strong>Stock Finding</strong> Algorithms")
-
         ## SHOW ==> MAIN WINDOW
         self.show()
 

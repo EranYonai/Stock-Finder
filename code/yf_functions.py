@@ -1,18 +1,19 @@
 # Raw packages
+import configparser
 import numpy as np
+# Other imports
+import os
 import pandas as pd
 # Data Source
 import pandas.core.frame
-import yfinance as yf
 # Data visualization
 import plotly.graph_objs as go
-# Other imports
-import os
-import config as cfg
-import configparser
-import urllib.request
-from datetime import datetime
 import time
+import urllib.request
+import yfinance as yf
+from datetime import datetime
+
+import config as cfg
 
 # Global Variables
 
