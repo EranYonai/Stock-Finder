@@ -11,7 +11,7 @@
     - Calculate difference from ATH
 
 # Disclaimer
-- The suggestions are __By No Neans__ to be interpreted as reccomendations.
+- The suggestions are __By No Means__ to be interpreted as reccomendations.
 - The Results are merely a basis for Research and Analysis.
 
 # License
